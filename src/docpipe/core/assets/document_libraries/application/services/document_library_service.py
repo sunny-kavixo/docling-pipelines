@@ -307,12 +307,14 @@ class DocumentLibraryService(AssetService[DocumentLibrary]):
         *,
         limit: int | None = None,
         offset: int | None = None,
+        name_filter: str | None = None,
     ) -> list[DocumentLibrary]:
         """Retrieve all document libraries with optional pagination.
 
         Args:
             limit: Maximum number of libraries to return (None for all)
             offset: Number of libraries to skip (for pagination)
+            name_filter: Optional case-insensitive partial name filter
 
         Returns:
             List of document libraries ordered by creation date (newest first)
@@ -330,7 +332,15 @@ class DocumentLibraryService(AssetService[DocumentLibrary]):
             >>> # Get second page
             >>> page2 = service.list_libraries(limit=10, offset=10)
         """
-        libraries = self._repository.list_all(limit=limit, offset=offset)
+        if name_filter:
+            libraries = [
+                library for library in self._repository.find_all() if name_filter.lower() in library.name.lower()
+            ]
+            start = offset or 0
+            end = start + limit if limit is not None else None
+            libraries = libraries[start:end]
+        else:
+            libraries = self._repository.list_all(limit=limit, offset=offset)
 
         logger.info("Retrieved %d libraries", len(libraries))
         return libraries

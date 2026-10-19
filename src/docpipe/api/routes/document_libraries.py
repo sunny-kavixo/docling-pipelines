@@ -354,6 +354,7 @@ def get_library(
     **Query Parameters:**
     - `limit` (optional): Maximum number of libraries to return (default: 100, max: 1000)
     - `offset` (optional): Number of libraries to skip (default: 0)
+    - `name` (optional): Case-insensitive partial name filter
 
     **Response:**
     - Returns list of libraries with metadata
@@ -404,6 +405,7 @@ def list_libraries(
     libraries = service.list_libraries(
         limit=limit,
         offset=offset,
+        name_filter=filters["name"],
     )
 
     # Convert to response DTOs
@@ -815,7 +817,7 @@ def list_document_sets(
             "description": doc_set.description,
             "container_id": doc_set.metadata.get("container_id") if doc_set.metadata else None,
             "container_type": doc_set.metadata.get("container_type") if doc_set.metadata else None,
-            "documents": {"count": doc_set.total_documents, "size_bytes": doc_set.total_size_bytes}
+            "documents": {"count": doc_set.total_documents, "size": doc_set.total_size_bytes}
             if doc_set.total_documents > 0
             else None,
             "tags": doc_set.metadata.get("tags", []) if doc_set.metadata else [],

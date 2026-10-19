@@ -7,6 +7,7 @@ import pytest
 from docpipe.core.assets.document_libraries.application.services.document_library_service import (
     DocumentLibraryService,
 )
+from docpipe.core.assets.document_libraries.domain.models.document_library import DocumentLibrary
 from docpipe.exceptions.docpipe_exceptions import DocpipeException
 
 
@@ -17,6 +18,7 @@ def mock_repository():
     repo.save.return_value = None
     repo.find_by_id.return_value = None
     repo.find_by_name.return_value = None
+    repo.find_all.return_value = []
     repo.list_all.return_value = []
     repo.update.return_value = None
     repo.delete.return_value = True
@@ -126,6 +128,29 @@ class TestDocumentLibraryServiceList:
 
         assert result == len(multiple_sample_libraries)
         mock_repository.find_all.assert_called()
+
+    def test_name_filter_is_applied_before_pagination(self, service, mock_repository):
+        """Test partial name matching happens before offset and limit are applied."""
+        mock_repository.find_all.return_value = [
+            DocumentLibrary(library_id="library-1", name="Research Alpha"),
+            DocumentLibrary(library_id="library-2", name="Operations"),
+            DocumentLibrary(library_id="library-3", name="Research Beta"),
+            DocumentLibrary(library_id="library-4", name="Research Gamma"),
+        ]
+
+        result = service.list_libraries(name_filter="research", limit=1, offset=1)
+
+        assert [library.name for library in result] == ["Research Beta"]
+        mock_repository.find_all.assert_called_once_with()
+        mock_repository.list_all.assert_not_called()
+
+    def test_name_filter_with_no_match_returns_empty(self, service, mock_repository):
+        """Test a nonmatching name filter returns no libraries."""
+        mock_repository.find_all.return_value = [DocumentLibrary(name="Research Alpha")]
+
+        result = service.list_libraries(name_filter="missing")
+
+        assert result == []
 
 
 class TestDocumentLibraryServiceUpdate:
